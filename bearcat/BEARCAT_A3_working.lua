@@ -150,11 +150,11 @@ function main()
     -- nTrainDocs is the number of documents per class used in the training set, i.e.
     -- here we take the first nTrainDocs documents from each class as training samples
     -- and use the rest as a validation set.
-    opt.nTrainDocs = 20000
-    opt.nTestDocs = 5000
+    opt.nTrainDocs = 104000
+    opt.nTestDocs = 26000
     opt.nClasses = 5
     -- SGD parameters - play around with these
-    opt.nEpochs = 5
+    opt.nEpochs = 50
     opt.minibatchSize = 128
     opt.nBatches = math.floor(opt.nTrainDocs / opt.minibatchSize)
     opt.learningRate = 0.1
@@ -187,17 +187,18 @@ function main()
     ninputs = 1
     nstates = {20}
     noutputs = 5
-    filtsizeW = 10	-- filter size across words
-    filtsizeH = 10	-- filter size across word vector dimensions
-    poolsize = 3	-- pooling size across word vector dimensions
+    filtsizeW = 5	-- filter size across words
+    filtsizeH = 50	-- filter size across word vector dimensions
+    poolsizeW = 5	-- pooling size across words
+    poolsizeH = 1	-- pooling size across word vector dimensions
 
     model = nn.Sequential()
 
     model:add(nn.SpatialConvolutionMM(ninputs, nstates[1], filtsizeW, filtsizeH))
-    model:add(nn.SpatialMaxPooling(111, poolsize, 1, 1))
+    model:add(nn.SpatialMaxPooling(poolsizeW, poolsizeH, poolsizeW, 1))
 
-    model:add(nn.Reshape(nstates[1]*39, true))
-    model:add(nn.Linear(nstates[1]*39, 5))
+    model:add(nn.Reshape(nstates[1]*23, true))
+    model:add(nn.Linear(nstates[1]*23, 5))
     model:add(nn.LogSoftMax())
 
     criterion = nn.ClassNLLCriterion()

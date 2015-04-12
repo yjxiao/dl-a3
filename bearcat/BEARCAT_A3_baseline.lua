@@ -83,8 +83,8 @@ function train_model(model, criterion, data, labels, test_data, test_labels, opt
     
     -- optimization functional to train the model with torch's optim library
     local function feval(x) 
-        local minibatch = data:sub(opt.idx, opt.idx + opt.minibatchSize, 1, data:size(2)):clone()
-        local minibatch_labels = labels:sub(opt.idx, opt.idx + opt.minibatchSize):clone()
+        local minibatch = data:sub(opt.idx, opt.idx + opt.minibatchSize - 1):clone()
+        local minibatch_labels = labels:sub(opt.idx, opt.idx + opt.minibatchSize - 1):clone()
         
         model:training()
         local minibatch_loss = criterion:forward(model:forward(minibatch), minibatch_labels)
@@ -132,10 +132,11 @@ function main()
     -- here we take the first nTrainDocs documents from each class as training samples
     -- and use the rest as a validation set.
     opt.nTrainDocs = 10000
+    opt.nValidDocs = 19500
     opt.nTestDocs = 0
     opt.nClasses = 5
     -- SGD parameters - play around with these
-    opt.nEpochs = 5
+    opt.nEpochs = 50
     opt.minibatchSize = 128
     opt.nBatches = math.floor(opt.nTrainDocs / opt.minibatchSize)
     opt.learningRate = 0.1
@@ -153,13 +154,14 @@ function main()
     local processed_data, labels = preprocess_data(raw_data, glove_table, opt)
     
     -- split data into makeshift training and validation sets
-    local training_data = processed_data:sub(1, opt.nClasses*opt.nTrainDocs, 1, processed_data:size(2)):clone()
+    local training_data = processed_data:sub(1, opt.nClasses*opt.nTrainDocs):clone()
     local training_labels = labels:sub(1, opt.nClasses*opt.nTrainDocs):clone()
     
     -- make your own choices - here I have not created a separate test set
-    local test_data = training_data:clone() 
+    local test_data = training_data:clone()
     local test_labels = training_labels:clone()
 
+    dofile("BEARCAT_A3_skeleton.lua")
     -- construct model:
     model = nn.Sequential()
    
@@ -169,7 +171,8 @@ function main()
     --------------------------------------------------------------------------------------
     -- Replace this temporal max-pooling module with your log-exponential pooling module:
     --------------------------------------------------------------------------------------
-    model:add(nn.TemporalMaxPooling(3, 1))
+    model:add(nn.TemporalLogExpPooling(3, 1, 2))
+    --model:add(nn.TemporalMaxPooling(3, 1))
     
     model:add(nn.Reshape(20*39, true))
     model:add(nn.Linear(20*39, 5))
