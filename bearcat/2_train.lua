@@ -150,7 +150,8 @@ function main()
     model:add(nn.LogSoftMax())
 
     criterion = nn.ClassNLLCriterion()
-
+    
+    print(model)
     print("Training...")   
     train_model(model, criterion, training_data, training_labels, valid_data, valid_labels, opt)
     local results = test_model(model, test_data, test_labels)

@@ -99,11 +99,10 @@ function train_model(model, criterion, data, labels, test_data, test_labels, opt
         for batch=1,opt.nBatches do
             opt.idx = (order[batch] - 1) * opt.minibatchSize + 1
             optim.sgd(feval, parameters, opt)
-            print("epoch: ", epoch, " batch: ", batch)
         end
 
         local accuracy = test_model(model, test_data, test_labels, opt)
-        print("epoch ", epoch, " error: ", accuracy)
+	validLogger:add{['% mean class accuracy (valid set)'] = accuracy * 100}
 
     end
 end
@@ -131,12 +130,12 @@ function main()
     -- nTrainDocs is the number of documents per class used in the training set, i.e.
     -- here we take the first nTrainDocs documents from each class as training samples
     -- and use the rest as a validation set.
-    opt.nTrainDocs = 10000
+    opt.nTrainDocs = 84500
     opt.nValidDocs = 19500
-    opt.nTestDocs = 0
+    opt.nTestDocs = 26000
     opt.nClasses = 5
     -- SGD parameters - play around with these
-    opt.nEpochs = 50
+    opt.nEpochs = 100
     opt.minibatchSize = 128
     opt.nBatches = math.floor(opt.nTrainDocs / opt.minibatchSize)
     opt.learningRate = 0.1
@@ -158,10 +157,13 @@ function main()
     local training_labels = labels:sub(1, opt.nClasses*opt.nTrainDocs):clone()
     
     -- make your own choices - here I have not created a separate test set
-    local test_data = training_data:clone()
-    local test_labels = training_labels:clone()
+    local test_data = processed_data:sub(opt.nClasses*opt.nTrainDocs+1, opt.nClasses*(opt.nTrainDocs+opt.nValidDocs)):clone()
+    local test_labels = labels:sub(opt.nClasses*opt.nTrainDocs+1, opt.nClasses*(opt.nTrainDocs+opt.nValidDocs)):clone()
 
-    dofile("BEARCAT_A3_skeleton.lua")
+    validLogger = optim.Logger("/scratch/yx887/dl-a3/results/valid_bl.log")
+    testLogger = optim.Logger("/scratch/yx887/dl-a3/results/test_bl.log")
+
+    --dofile("BEARCAT_A3_skeleton.lua")
     -- construct model:
     model = nn.Sequential()
    
@@ -171,8 +173,8 @@ function main()
     --------------------------------------------------------------------------------------
     -- Replace this temporal max-pooling module with your log-exponential pooling module:
     --------------------------------------------------------------------------------------
-    model:add(nn.TemporalLogExpPooling(3, 1, 2))
-    --model:add(nn.TemporalMaxPooling(3, 1))
+    --model:add(nn.TemporalLogExpPooling(3, 1, 2))
+    model:add(nn.TemporalMaxPooling(3, 1))
     
     model:add(nn.Reshape(20*39, true))
     model:add(nn.Linear(20*39, 5))
@@ -182,7 +184,7 @@ function main()
    
     train_model(model, criterion, training_data, training_labels, test_data, test_labels, opt)
     local results = test_model(model, test_data, test_labels)
-    print(results)
+    testLogger:add{['% mean class accuracy (test set)'] = results * 100}
 end
 
 main()
